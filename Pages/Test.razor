@@ -1,0 +1,140 @@
+﻿@page "/test"
+@inject TestService TestSrv
+@inject NavigationManager Nav
+@using System.Timers
+@implements IDisposable
+
+<style>
+    .timer-container {
+        width: 100px;
+        height: 100px;
+        border: 5px solid #333;
+        border-radius: 50%;
+        position: relative;
+        margin: 20px auto 20px 0;
+        background: #f0f0f0;
+        overflow: hidden;
+    }
+
+    .hand {
+        width: 4px;
+        height: 50px;
+        background: #603808; 
+        position: absolute;
+        left: 50%;
+        bottom: 50%;
+        transform-origin: bottom;
+    }
+</style>
+
+@code {
+    private int currentIndex = 0;
+    private string userAnswer = "";
+    private int secondsPassed = 0;
+    private Timer? questionTimer;
+
+    protected override void OnInitialized()
+    {
+        if (TestSrv.CurrentTestQuestions == null || !TestSrv.CurrentTestQuestions.Any())
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+
+        StartQuestionTimer();
+    }
+
+    private void StartQuestionTimer()
+    {
+        StopQuestionTimer();
+
+        secondsPassed = 0;
+        questionTimer = new Timer(1000);
+        questionTimer.Elapsed += OnTimerStep;
+        questionTimer.AutoReset = true;
+        questionTimer.Enabled = true;
+    }
+
+    private void OnTimerStep(object? sender, ElapsedEventArgs e)
+    {
+        if (secondsPassed < 10)
+        {
+            secondsPassed++;
+            InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            InvokeAsync(HandleNextQuestion);
+        }
+    }
+
+
+
+    private void HandleNextQuestion()
+    {
+        StopQuestionTimer();
+
+        TestSrv.UserAnswers.Add(userAnswer);
+
+        string cleanUser = TextNormalizer.Normalize(userAnswer);
+        string cleanCorrect = TextNormalizer.Normalize(TestSrv.CurrentTestQuestions[currentIndex].Value);
+
+        if (cleanUser == cleanCorrect)
+        {
+            TestSrv.Score++;
+        }
+
+        if (currentIndex < TestSrv.CurrentTestQuestions.Count - 1)
+        {
+            currentIndex++;
+            userAnswer = "";
+
+            secondsPassed = 0;
+            StartQuestionTimer();
+
+            StateHasChanged();
+        }
+        else
+        {
+            Nav.NavigateTo("/score");
+        }
+    }
+
+    private void StopQuestionTimer()
+    {
+        if (questionTimer != null)
+        {
+            questionTimer.Elapsed -= OnTimerStep;
+            questionTimer.Stop();
+            questionTimer.Dispose();
+            questionTimer = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        StopQuestionTimer();
+    }
+
+    private string counter => $"{currentIndex + 1} / {TestSrv.CurrentTestQuestions.Count}";
+
+}
+<h3>@counter</h3>
+<h1>@TestSrv.CurrentTestQuestions[currentIndex].Key</h1>
+
+<input @bind="userAnswer" placeholder="Wpisz nazwę pierwiastka" />
+
+<button @onclick="HandleNextQuestion">DALEJ</button>
+
+@{
+    var progressDegrees = secondsPassed * 36;
+    var backgroundStyle = $"background: conic-gradient(#bc6c25 {progressDegrees}deg, #f0f0f0 {progressDegrees}deg);";
+} 
+
+<div class="timer-container" style="@backgroundStyle">
+    <div class="hand" style="transform: rotate(@(progressDegrees)deg)"></div>
+</div>
+
+
+
+

@@ -1,0 +1,55 @@
+﻿@page "/"
+@inject TestService TestSrv
+@inject NavigationManager Nav
+
+<div class="container">
+    <h1>Nomenklator Pierwiastków</h1>
+
+    @if (isLoading)
+    {
+        <div class="loading-box">
+            <p>Wczytywanie...</p>
+        </div>
+    }
+    else if (!TestSrv.AllElements.Any())
+    {
+        <p style="color: red;">Błąd: Nie udało się załadować danych. Odśwież stronę.</p>
+    }
+    else
+    {
+        <button @onclick="RunTest">START</button>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (TestSrv.AllElements == null || !TestSrv.AllElements.Any())
+            {
+                await TestSrv.LoadElementsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during startup: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void RunTest()
+    {
+        if (TestSrv.AllElements.Any())
+        {
+            TestSrv.GenerateNewTest(10);
+            Nav.NavigateTo("/test");
+        }
+    }
+}

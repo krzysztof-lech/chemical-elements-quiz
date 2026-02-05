@@ -1,0 +1,54 @@
+﻿@page "/details"
+@inject TestService TestSrv
+@inject NavigationManager Nav
+<h3>Szczegóły</h3>
+
+<p><strong>@TestSrv.Score</strong>/ @TestSrv.CurrentTestQuestions.Count</p>
+
+<table class="table" style="width:100%; border-collapse: collapse; text-align: left;">
+    <thead>
+        <tr style="border-bottom: 2px solid #000;">
+            <th></th>
+            <th>Twoja odpowiedź</th>
+            <th>Poprawna odpowiedź</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < TestSrv.CurrentTestQuestions.Count; i++)
+        {
+            var question = TestSrv.CurrentTestQuestions[i];
+            var answer = i < TestSrv.UserAnswers.Count ? TestSrv.UserAnswers[i] : "No answer";
+
+            bool isCorrect = TextNormalizer.Normalize(answer) == TextNormalizer.Normalize(question.Value);
+
+            <tr style="background-color: @(isCorrect ? "#d4edda" : "#f8d7da"); border-bottom: 1px solid #ccc;">
+                <td style="padding: 10px;">@question.Key</td>
+                <td style="padding: 10px;">@answer</td>
+                <td style="padding: 10px;">@question.Value</td>
+                <td style="padding: 10px;">@(isCorrect ? "Dobrze" : "Źle")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button @onclick="runTest"> Jeszcze raz</button>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (TestSrv.CurrentTestQuestions == null || !TestSrv.CurrentTestQuestions.Any())
+        {
+            Nav.NavigateTo("/");
+        }
+    }
+
+    private async Task runTest()
+    {
+        TestSrv.GenerateNewTest(10);
+        Nav.NavigateTo("/test");
+        await Task.CompletedTask;
+    }
+}
+
+

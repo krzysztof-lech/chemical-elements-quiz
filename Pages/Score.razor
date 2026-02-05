@@ -1,0 +1,28 @@
+﻿@page "/score"
+@inject TestService TestSrv
+@inject NavigationManager Nav
+<h3>Twój wynik</h3>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (TestSrv.CurrentTestQuestions == null || !TestSrv.CurrentTestQuestions.Any())
+        {
+            Nav.NavigateTo("/");
+        }
+    }
+
+    private void ViewDetails()
+    {
+        Nav.NavigateTo("/details");
+    }
+
+    private void runTest()
+    {
+        TestSrv.GenerateNewTest(10);
+        Nav.NavigateTo("/test");
+    }
+}
+<h2><strong>@TestSrv.Score</strong>/ @TestSrv.CurrentTestQuestions.Count</h2>
+<button @onclick="ViewDetails">Szczegóły</button>
+<button @onclick="runTest"> Jeszcze raz</button>
